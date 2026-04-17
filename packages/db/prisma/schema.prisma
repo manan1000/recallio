@@ -1,13 +1,117 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [pgvector(map: "vector")]
 }
 
-model User{
-  id String @id @default(uuid())
-  name String
+enum DocumentType {
+  LINK // any webpage / blog / article
+  YOUTUBE // youtube video (transcript)
+  NOTE // plain text the user types
+  PDF // uploaded PDF
+  IMAGE // uploaded image
+  DOCUMENT // uploaded doc/docx
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String? // null for OAuth users
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  oauthAccounts OAuthAccount[]
+  documents     Document[]
+  chats         Chat[]
+}
+
+model OAuthAccount {
+  id           String   @id @default(cuid())
+  provider     String // "google" | "github"
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@unique([provider, providerId])
+}
+
+model Document {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         DocumentType
+  title        String?
+  sourceUrl    String?
+  rawContent   String?
+  cleanContent String?
+  summary      String?
+  status       ProcessingStatus @default(PENDING)
+  error        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  chunks Chunk[]
+  chats  Chat[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Chunk {
+  id         String                       @id @default(cuid())
+  documentId String
+  document   Document                     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content    String
+  order      Int // position in 
+  metadata   Json?
+  embedding  Unsupported("vector(1536)")? // future: vector embedding 
+  createdAt  DateTime                     @default(now())
+
+  @@index([documentId])
+}
+
+model Chat {
+  id         String    @id @default(cuid())
+  title      String?
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentId String? // null = chat with entire knowledge base
+  document   Document? @relation(fields: [documentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  role      MessageRole
+  content   String
+  chatId    String
+  sources   Json? // [{ chunkId, documentTitle, sourceUrl }]
+  chat      Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
 }

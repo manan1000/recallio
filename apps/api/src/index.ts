@@ -1,17 +1,8 @@
-import express from "express";
 import "dotenv/config";
+import app from "./app";
 
-const PORT = process.env.PORT;
-
-const app = express();
-app.use(express.json());
-
-
-app.get("/", (_req, res) => {
-  res.send("Recallio API running");
-});
-
+const PORT = process.env.PORT ?? 3000;
 
 app.listen(PORT, () => {
-  console.log(`API running on port ${PORT}`);
+  console.log(`API running on http://localhost:${PORT}`);
 });

@@ -56,7 +56,9 @@
       "dependsOn": [
         "db:generate"
       ],
-      "cache": false
+      "cache": false,
+      "persistent": true,
+      "interactive": true
     },
     "db:deploy": {
       "cache": false
