@@ -45,12 +45,12 @@ model User {
 }
 
 model OAuthAccount {
-  id           String   @id @default(cuid())
-  provider     String // "google" | "github"
-  providerId   String
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
+  id         String   @id @default(cuid())
+  provider   String // "google" | "github"
+  providerId String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@unique([provider, providerId])
   @@index([userId])
@@ -63,6 +63,8 @@ model Document {
   type         DocumentType
   title        String?
   sourceUrl    String?
+  fileUrl      String? // for PDF, IMAGE, DOCUMENT
+  fileName     String? // for PDF, IMAGE, DOCUMENT
   rawContent   String?
   cleanContent String?
   summary      String?
