@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/db";
-import { documentQueue } from "../../lib/queue";
+import { documentQueue } from "@repo/queue";
 import { createDocumentSchema } from "./documents.schema";
 
 export const createDocument = async (req: Request, res: Response) => {

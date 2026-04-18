@@ -1,0 +1,15 @@
+{
+  "name": "@repo/queue",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "bullmq": "^5.74.1",
+    "ioredis": "^5.10.1"
+  }
+}
