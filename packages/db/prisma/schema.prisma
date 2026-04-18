@@ -55,6 +55,7 @@ model OAuthAccount {
   createdAt    DateTime @default(now())
 
   @@unique([provider, providerId])
+  @@index([userId])
 }
 
 model Document {
@@ -98,12 +99,15 @@ model Chat {
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   documentId String? // null = chat with entire knowledge base
-  document   Document? @relation(fields: [documentId], references: [id])
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   messages Message[]
+
+  @@index([userId])
+  @@index([documentId])
 }
 
 model Message {
@@ -114,4 +118,6 @@ model Message {
   sources   Json? // [{ chunkId, documentTitle, sourceUrl }]
   chat      Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())
+
+  @@index([chatId])
 }
