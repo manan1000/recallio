@@ -28,8 +28,6 @@ CREATE TABLE "OAuthAccount" (
     "id" TEXT NOT NULL,
     "provider" TEXT NOT NULL,
     "providerId" TEXT NOT NULL,
-    "accessToken" TEXT,
-    "refreshToken" TEXT,
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -95,6 +93,9 @@ CREATE TABLE "Message" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "OAuthAccount_userId_idx" ON "OAuthAccount"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "OAuthAccount_provider_providerId_key" ON "OAuthAccount"("provider", "providerId");
 
 -- CreateIndex
@@ -105,6 +106,15 @@ CREATE INDEX "Document_status_idx" ON "Document"("status");
 
 -- CreateIndex
 CREATE INDEX "Chunk_documentId_idx" ON "Chunk"("documentId");
+
+-- CreateIndex
+CREATE INDEX "Chat_userId_idx" ON "Chat"("userId");
+
+-- CreateIndex
+CREATE INDEX "Chat_documentId_idx" ON "Chat"("documentId");
+
+-- CreateIndex
+CREATE INDEX "Message_chatId_idx" ON "Message"("chatId");
 
 -- AddForeignKey
 ALTER TABLE "OAuthAccount" ADD CONSTRAINT "OAuthAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

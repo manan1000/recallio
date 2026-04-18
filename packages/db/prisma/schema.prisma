@@ -48,8 +48,6 @@ model OAuthAccount {
   id           String   @id @default(cuid())
   provider     String // "google" | "github"
   providerId   String
-  accessToken  String?
-  refreshToken String?
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
