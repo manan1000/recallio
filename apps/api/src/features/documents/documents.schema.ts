@@ -49,6 +49,7 @@ export const createDocumentSchema = z.discriminatedUnion("type", [
     fileUrl: validUrl,
     fileName: z.string().trim().min(1),
     fileSize: z.number().positive().optional(),
+    filePath: z.string().trim().min(1),
     title: optionalTitle,
   }).strict(),
 
@@ -57,6 +58,7 @@ export const createDocumentSchema = z.discriminatedUnion("type", [
     fileUrl: validUrl,
     fileName: z.string().trim().min(1),
     fileSize: z.number().positive().optional(),
+    filePath: z.string().trim().min(1),
     mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
     title: optionalTitle,
   }).strict(),
@@ -66,6 +68,7 @@ export const createDocumentSchema = z.discriminatedUnion("type", [
     fileUrl: validUrl,
     fileName: z.string().trim().min(1),
     fileSize: z.number().positive().optional(),
+    filePath: z.string().trim().min(1),
     title: optionalTitle,
   }).strict(),
 ]);
