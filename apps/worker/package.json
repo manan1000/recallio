@@ -1,0 +1,29 @@
+{
+  "name": "@repo/worker",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write src/"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/cheerio": "^1.0.0",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@repo/ai": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/queue": "workspace:*",
+    "@repo/storage": "workspace:*",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "unpdf": "^1.6.0",
+    "youtube-transcript-plus": "^2.0.0"
+  }
+}
