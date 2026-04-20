@@ -1,25 +1,37 @@
 import { openai } from "./openai";
 
 export const summarizeContent = async (content: string): Promise<string> => {
-  // truncate to avoid hitting context limits — first 6000 words is enough for summary
-  const truncated = content.split(/\s+/).slice(0, 6000).join(" ");
+    const words = content.split(/\s+/);
+    const totalWords = words.length;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: "You are a helpful assistant that summarizes content concisely in 2-3 sentences. Return only the summary, no preamble.",
-      },
-      {
-        role: "user",
-        content: `Summarize this:\n\n${truncated}`,
-      },
-    ],
-    max_tokens: 200,
-  });
+    let textToSummarize: string;
 
-  return response.choices[0]?.message?.content?.trim() ?? "";
+    if (totalWords <= 8000) {
+        // fits entirely — use all of it
+        textToSummarize = content;
+    } else {
+        // take first 5000 words + last 2000 words
+        const start = words.slice(0, 5000).join(" ");
+        const end = words.slice(-3000).join(" ");
+        textToSummarize = `${start}\n\n[...]\n\n${end}`;
+    }
+
+    const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+            {
+                role: "system",
+                content: "You are a helpful assistant that summarizes content concisely in 3-4 sentences capturing the main ideas. Return only the summary, no preamble.",
+            },
+            {
+                role: "user",
+                content: `Summarize this:\n\n${textToSummarize}`,
+            },
+        ],
+        max_tokens: 200,
+    });
+
+    return response.choices[0]?.message?.content?.trim() ?? "";
 };
 
 

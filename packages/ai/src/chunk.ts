@@ -2,32 +2,32 @@ const CHUNK_SIZE = 600;
 const OVERLAP = 80;
 
 export type Chunk = {
-    content: string;
-    order: number;
+  content: string;
+  order: number;
 };
 
 export const chunkText = (text: string): Chunk[] => {
-    const words = text.split(/\s+/).filter(Boolean); //Splits the string wherever there’s one or more whitespace characters (spaces, tabs, newlines)
-    const chunks: Chunk[] = [];
-    let i = 0;
-    let order = 0;
+  const words = text.split(/\s+/).filter(Boolean); //Splits the string wherever there’s one or more whitespace characters (spaces, tabs, newlines)
+  const chunks: Chunk[] = [];
+  let i = 0;
+  let order = 0;
 
-    while (i < words.length) {
-        const chunkWords = words.slice(i, i + CHUNK_SIZE);
-        const content = chunkWords.join(" ");
+  while (i < words.length) {
+    const chunkWords = words.slice(i, i + CHUNK_SIZE);
+    const content = chunkWords.join(" ");
 
-        if (content.trim().length > 0) {
-            chunks.push({ content, order });
-            order++;
-        }
-
-        // if this is the last chunk, stop
-        if (i + CHUNK_SIZE >= words.length) break;
-
-        i += CHUNK_SIZE - OVERLAP;
+    if (content.trim().length > 0) {
+      chunks.push({ content, order });
+      order++;
     }
 
-    return chunks;
+    // if this is the last chunk, stop
+    if (i + CHUNK_SIZE >= words.length) break;
+
+    i += CHUNK_SIZE - OVERLAP;
+  }
+
+  return chunks;
 };
 
 
