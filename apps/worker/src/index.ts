@@ -10,6 +10,7 @@ import { processNote } from "./processors/note";
 import { processPdf } from "./processors/pdf";
 import { processImage } from "./processors/image";
 import { processDocument } from "./processors/document";
+import { createId } from "@paralleldrive/cuid2";
 
 const worker = new Worker<DocumentJobData>("document-processing", async (job: Job) => {
     const { documentId, userId } = job.data;
@@ -84,18 +85,23 @@ const worker = new Worker<DocumentJobData>("document-processing", async (job: Jo
         const embeddedChunks = await embedChunks(chunks);
 
         // Step 5 — save chunks to DB
+        // Step 5 — save chunks to DB
         await prisma.$transaction(
-            embeddedChunks.map((chunk) =>
-                prisma.chunk.create({
-                    data: {
-                        documentId,
-                        content: chunk.content,
-                        order: chunk.order,
-                        embedding: JSON.stringify(chunk.embedding),
-                    },
-                })
-            )
-        );
+            embeddedChunks.map((chunk) => {
+            const id = createId();
+            return prisma.$executeRaw`
+                INSERT INTO "Chunk" (id, "documentId", content, "order", embedding, "createdAt")
+                VALUES (
+                    ${id},
+                    ${documentId},
+                    ${chunk.content},
+                    ${chunk.order},
+                    ${JSON.stringify(chunk.embedding)}::vector,
+                    NOW()
+                )
+            `;
+        }));
+
 
         // Step 6 — generate summary
         const summary = await summarizeContent(clean);

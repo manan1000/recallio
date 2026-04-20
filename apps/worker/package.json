@@ -14,9 +14,11 @@
     "@repo/typescript-config": "workspace:*",
     "@types/cheerio": "^1.0.0",
     "@types/node": "^20.12.12",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@paralleldrive/cuid2": "^3.3.0",
     "@repo/ai": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/queue": "workspace:*",

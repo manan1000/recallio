@@ -88,7 +88,7 @@ model Chunk {
   content    String
   order      Int // position in 
   metadata   Json?
-  embedding  Unsupported("vector(1536)")? // future: vector embedding 
+  embedding  Unsupported("vector(1536)")?
   createdAt  DateTime                     @default(now())
 
   @@index([documentId])
