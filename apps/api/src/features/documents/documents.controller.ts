@@ -41,8 +41,8 @@ export const createDocument = async (req: Request, res: Response) => {
             }
         }
 
-        if ((data.type==="IMAGE" || data.type==="PDF" || data.type==="DOCUMENT")&& !data.filePath.startsWith(`${userId}/`)) {
-            throw new Error("Invalid file path");
+        if ((data.type === "IMAGE" || data.type === "PDF" || data.type === "DOCUMENT") && !data.filePath.startsWith(`${userId}/`)) {
+            return res.status(403).json({ error: "Invalid file path" });
         }
 
         const document = await prisma.document.create({
@@ -79,22 +79,41 @@ export const createDocument = async (req: Request, res: Response) => {
 
 export const listDocuments = async (req: Request, res: Response) => {
     try {
-        const documents = await prisma.document.findMany({
-            where: { userId: req.user!.id },
-            orderBy: { createdAt: "desc" },
-            select: {
-                id: true,
-                type: true,
-                title: true,
-                sourceUrl: true,
-                fileName: true,
-                status: true,
-                summary: true,
-                createdAt: true,
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
+        const skip = (page - 1) * limit;
+
+        const [documents, total] = await prisma.$transaction([
+            prisma.document.findMany({
+                where: { userId: req.user!.id },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    type: true,
+                    title: true,
+                    sourceUrl: true,
+                    fileName: true,
+                    status: true,
+                    summary: true,
+                    createdAt: true,
+                },
+            }),
+            prisma.document.count({
+                where: { userId: req.user!.id },
+            }),
+        ]);
+
+        return res.json({
+            documents,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
             },
         });
-
-        return res.json({ documents });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Something went wrong" });
