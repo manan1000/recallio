@@ -41,6 +41,10 @@ export const createDocument = async (req: Request, res: Response) => {
             }
         }
 
+        if ((data.type==="IMAGE" || data.type==="PDF" || data.type==="DOCUMENT")&& !data.filePath.startsWith(`${userId}/`)) {
+            throw new Error("Invalid file path");
+        }
+
         const document = await prisma.document.create({
             data: {
                 userId,

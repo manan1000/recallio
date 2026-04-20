@@ -79,6 +79,7 @@ model Document {
 
   @@index([userId])
   @@index([status])
+  // @@unique([userId, sourceUrl]) can use later to prevent duplicate requests
 }
 
 model Chunk {

@@ -85,7 +85,6 @@ const worker = new Worker<DocumentJobData>("document-processing", async (job: Jo
         const embeddedChunks = await embedChunks(chunks);
 
         // Step 5 — save chunks to DB
-        // Step 5 — save chunks to DB
         await prisma.$transaction(
             embeddedChunks.map((chunk) => {
             const id = createId();
