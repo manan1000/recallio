@@ -22,6 +22,14 @@ export const search = async (req: Request, res: Response) => {
         const results = await searchSimilarChunks(embedding, userId, SEARCH_LIMIT);
         const filtered = results.filter((r) => r.similarity > 0.3);
 
+        if (filtered.length === 0) {
+            return res.json({
+                query,
+                results: [],
+                message: "No relevant results found",
+            });
+        }
+
         return res.json({
             query: query.trim(),
             results: filtered.map((r) => ({
@@ -29,7 +37,7 @@ export const search = async (req: Request, res: Response) => {
                 documentTitle: r.documentTitle,
                 documentType: r.documentType,
                 sourceUrl: r.sourceUrl,
-                content: r.content,
+                content: r.content.slice(0, 300) + "...",
                 similarity: Math.round(r.similarity * 100) / 100,
             })),
         });
