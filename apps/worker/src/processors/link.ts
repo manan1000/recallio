@@ -18,7 +18,7 @@ export const processLink = async (url: string): Promise<string> => {
             body: JSON.stringify({ url }),
             signal: AbortSignal.timeout(15000) // 15 seconds
         };
-        const res = await fetch(process.env.JINA_URL!, options);
+        const res = await fetch(process.env.JINA_API_URL!, options);
 
         if (res.ok) {
             const text = await res.text();

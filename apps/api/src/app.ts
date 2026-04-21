@@ -11,7 +11,7 @@ import { generalLimiter } from "./lib/rate-limit";
 const app: Express = express();
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN ?? "http://localhost:4000",
+    origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
     credentials: true,
 }));
 app.use(cookieParser());

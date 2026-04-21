@@ -1,8 +1,14 @@
 {
   "name": "@repo/ai",
   "version": "1.0.0",
+  "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write src/"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

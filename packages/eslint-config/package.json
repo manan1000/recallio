@@ -6,6 +6,7 @@
   "exports": {
     "./base": "./base.js",
     "./next-js": "./next.js",
+    "./node": "./node.js",
     "./react-internal": "./react-internal.js"
   },
   "devDependencies": {
@@ -22,5 +23,8 @@
     "globals": "^17.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0"
+  },
+  "dependencies": {
+    "eslint-config-turbo": "^2.9.6"
   }
 }

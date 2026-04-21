@@ -3,14 +3,19 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@repo/db";
 import { signToken } from "../../lib/jwt";
 import { registerSchema, loginSchema } from "./auth.schema";
-import { google, github } from "../../lib/oauth2";
+import { google } from "../../lib/oauth2";
 import { generateState, generateCodeVerifier, decodeIdToken } from "arctic";
 
 export const register = async (req: Request, res: Response) => {
     try {
         const parsed = registerSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({ error: parsed.error.errors });
+            return res.status(400).json({
+                error: {
+                    issue: parsed.error.issues[0]?.path[0],
+                    message: parsed.error.issues[0]?.message
+                }
+            });
         }
 
         const { email, password, name } = parsed.data;
@@ -45,7 +50,12 @@ export const login = async (req: Request, res: Response) => {
     try {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({ error: parsed.error.errors });
+            return res.status(400).json({
+                error: {
+                    issue: parsed.error.issues[0]?.path[0],
+                    message: parsed.error.issues[0]?.message
+                }
+            });
         }
 
         const { email, password } = parsed.data;
