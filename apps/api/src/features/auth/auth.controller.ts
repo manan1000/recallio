@@ -5,6 +5,7 @@ import { signToken } from "../../lib/jwt";
 import { registerSchema, loginSchema } from "./auth.schema";
 import { google } from "../../lib/oauth2";
 import { generateState, generateCodeVerifier, decodeIdToken } from "arctic";
+import { setCookie } from "../../lib/set-cookie";
 
 export const register = async (req: Request, res: Response) => {
     try {
@@ -39,7 +40,8 @@ export const register = async (req: Request, res: Response) => {
         });
 
         const token = signToken({ userId: user.id, email: user.email });
-        return res.status(201).json({ token, user });
+        setCookie(res, token);
+        return res.status(201).json({ user });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Something went wrong" });
@@ -71,8 +73,8 @@ export const login = async (req: Request, res: Response) => {
         }
 
         const token = signToken({ userId: user.id, email: user.email });
+        setCookie(res, token);
         return res.status(200).json({
-            token,
             user: { id: user.id, email: user.email, name: user.name },
         });
     } catch (err) {
@@ -81,75 +83,55 @@ export const login = async (req: Request, res: Response) => {
     }
 };
 
+export const logout = async (req: Request, res: Response) => {
+    res.clearCookie("auth_token", { path: "/" });
+    return res.json({ message: "Logged out" });
+};
 
+export const oauthCallback = async (
+    provider: string,
+    providerId: string,
+    data: { email: string; name?: string; avatar?: string },
+    res: Response
+): Promise<{ id: string; email: string; name: string | null }> => {
+    // Step 1 — existing OAuth account
+    const existingOAuth = await prisma.oAuthAccount.findUnique({
+        where: { provider_providerId: { provider, providerId } },
+        include: { user: { select: { id: true, email: true, name: true } } },
+    });
 
-export const oauthCallback = async (provider: string, providerId: string, data: { email: string; name?: string; avatar?: string }, res: Response) => {
-    try {
-        // Step 1 — check if OAuth account already exists
-        const existingOAuth = await prisma.oAuthAccount.findUnique({
-            where: { provider_providerId: { provider, providerId } },
-            include: {
-                user: { select: { id: true, email: true, name: true } }
-            },
-        });
-
-        if (existingOAuth) {
-            const token = signToken({ userId: existingOAuth.user.id, email: existingOAuth.user.email });
-            return res.status(200).json({
-                token,
-                user: {
-                    id: existingOAuth.user.id,
-                    email: existingOAuth.user.email,
-                    name: existingOAuth.user.name,
-                },
-            });
-        }
-
-        // Step 2 — check if user with this email already exists
-        const existingUser = await prisma.user.findUnique({
-            where: { email: data.email },
-        });
-
-        if (existingUser) {
-            // Step 3a — attach OAuth account to existing user
-            await prisma.oAuthAccount.create({
-                data: {
-                    provider,
-                    providerId,
-                    userId: existingUser.id
-                }
-            });
-
-            const token = signToken({ userId: existingUser.id, email: existingUser.email });
-            return res.status(200).json({
-                token,
-                user: {
-                    id: existingUser.id,
-                    email: existingUser.email,
-                    name: existingUser.name,
-                },
-            });
-        }
-
-        // Step 3b — create new user + OAuth account
-        const newUser = await prisma.user.create({
-            data: {
-                email: data.email,
-                name: data.name,
-                avatar: data.avatar,
-                oauthAccounts: {
-                    create: { provider, providerId },
-                },
-            },
-            select: { id: true, email: true, name: true },
-        });
-
-        const token = signToken({ userId: newUser.id, email: newUser.email });
-        return res.status(201).json({ token, user: newUser });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+    if (existingOAuth) {
+        const token = signToken({ userId: existingOAuth.user.id, email: existingOAuth.user.email });
+        setCookie(res, token);
+        return existingOAuth.user;
     }
+
+    // Step 2 — existing email user
+    const existingUser = await prisma.user.findUnique({ where: { email: data.email } });
+
+    if (existingUser) {
+        await prisma.oAuthAccount.create({
+            data: { provider, providerId, userId: existingUser.id }
+        });
+        const token = signToken({ userId: existingUser.id, email: existingUser.email });
+        setCookie(res, token);
+        return { id: existingUser.id, email: existingUser.email, name: existingUser.name };
+    }
+
+    // Step 3 — new user
+    const newUser = await prisma.user.create({
+        data: {
+            email: data.email,
+            name: data.name,
+            avatar: data.avatar,
+            oauthAccounts: { create: { provider, providerId } },
+        },
+        select: { id: true, email: true, name: true },
+    });
+
+    const token = signToken({ userId: newUser.id, email: newUser.email });
+    setCookie(res, token);
+    return newUser;
 };
 
 // ── Google ──────────────────────────────────────────────
@@ -206,19 +188,15 @@ export const googleCallback = async (req: Request, res: Response) => {
             picture?: string;
         };
         // (provider: string, providerId: string, data: { email: string; name?: string; avatar?: string }, res: Response)
-        return oauthCallback(
-            "google",
-            claims.sub,
-            {
-                email: claims.email,
-                name: claims.name,
-                avatar: claims.picture,
-            },
-            res
-        );
+        await oauthCallback("google", claims.sub, {
+            email: claims.email,
+            name: claims.name,
+            avatar: claims.picture,
+        }, res);
+        return res.redirect(`${process.env.CORS_ORIGIN}/dashboard`);
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return res.redirect(`${process.env.CORS_ORIGIN}/login?error=oauth_failed`);
     }
 };
 
