@@ -1,10 +1,12 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
 import { authRouter } from "./features/auth/auth.routes";
 import { documentsRouter } from "./features/documents/documents.routes";
 import { uploadsRouter } from "./features/uploads/uploads.routes";
+import { chatRouter } from "./features/chats/chats.routes";
+
+
 const app: Express = express();
 
 app.use(cors({
@@ -21,5 +23,6 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/uploads", uploadsRouter);
+app.use("/api/chats", chatRouter);
 
 export default app;
