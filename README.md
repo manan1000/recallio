@@ -25,3 +25,40 @@ packages/ai     ← OpenAI, chunking, embedding, summarization
 packages/queue  ← BullMQ + Redis
 packages/db     ← Prisma + pgvector
 packages/storage ← Supabase storage
+
+
+
+
+src/
+  app/
+    (auth)/
+      login/
+        page.tsx
+      register/
+        page.tsx
+    (dashboard)/
+      layout.tsx          ← sidebar + nav, protected
+      dashboard/
+        page.tsx          ← overview/home
+      documents/
+        page.tsx          ← knowledge browser
+        [id]/
+          page.tsx        ← document detail
+      chat/
+        page.tsx          ← new chat
+        [id]/
+          page.tsx        ← existing chat
+      search/
+        page.tsx          ← search
+    layout.tsx            ← root layout (already exists)
+    page.tsx              ← landing page
+  components/
+    theme-provider.tsx    ← already exists
+    providers.tsx         ← TanStack Query + auth provider
+  lib/
+    api.ts                ← API client (fetch wrapper)
+    utils.ts              ← helpers
+  hooks/
+    use-auth.ts           ← auth state hook
+  types/
+    index.ts              ← shared types
