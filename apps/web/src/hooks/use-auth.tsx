@@ -4,10 +4,6 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import type { User } from "@repo/types";
 import { authApi, ApiError } from "@/lib/api";
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
-
 type AuthState = {
     user: User | null;
     loading: boolean;
@@ -20,22 +16,15 @@ type AuthContextType = AuthState & {
     logout: () => Promise<void>;
     googleLogin: () => void;
     setUser: (user: User | null) => void;
+    clearError: () => void;
 };
 
-// ─────────────────────────────────────────────
-// Context
-// ─────────────────────────────────────────────
-
 const AuthContext = createContext<AuthContextType | null>(null);
-
-// ─────────────────────────────────────────────
-// Provider
-// ─────────────────────────────────────────────
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [state, setState] = useState<AuthState>({
         user: null,
-        loading: true,
+        loading: true,   // true on initial load
         error: null,
     });
 
@@ -46,7 +35,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const { user } = await authApi.me();
                 setState({ user, loading: false, error: null });
             } catch {
-                // 401 = not logged in, that's fine
                 setState({ user: null, loading: false, error: null });
             }
         };
@@ -55,8 +43,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const login = useCallback(async (email: string, password: string) => {
-        const { user } = await authApi.login({ email, password });
-        setState({ user, loading: false, error: null });
+        try {
+            setState((prev) => ({ ...prev, loading: true, error: null }));
+            const { user } = await authApi.login({ email, password });
+            setState({ user, loading: false, error: null });
+        } catch (err) {
+            const message = err instanceof ApiError
+                ? err.message
+                : "Something went wrong";
+            setState((prev) => ({ ...prev, loading: false, error: message }));
+            throw err;
+        }
     }, []);
 
     const register = useCallback(async (
@@ -64,13 +61,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password: string,
         name?: string
     ) => {
-        const { user } = await authApi.register({ email, password, name });
-        setState({ user, loading: false, error: null });
+        try {
+            setState((prev) => ({ ...prev, loading: true, error: null }));
+            const { user } = await authApi.register({ email, password, name });
+            setState({ user, loading: false, error: null });
+        } catch (err) {
+            const message = err instanceof ApiError
+                ? err.message
+                : "Something went wrong";
+            setState((prev) => ({ ...prev, loading: false, error: message }));
+            throw err;
+        }
     }, []);
 
     const logout = useCallback(async () => {
-        await authApi.logout();
-        setState({ user: null, loading: false, error: null });
+        try {
+            setState((prev) => ({ ...prev, loading: true, error: null }));
+            await authApi.logout();
+            setState({ user: null, loading: false, error: null });
+        } catch (err) {
+            const message = err instanceof ApiError
+                ? err.message
+                : "Something went wrong";
+            setState((prev) => ({ ...prev, loading: false, error: message }));
+            throw err;
+        }
     }, []);
 
     const googleLogin = useCallback(() => {
@@ -81,6 +96,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setState((prev) => ({ ...prev, user }));
     }, []);
 
+    // lets components clear the error after showing it
+    // e.g. when user starts typing again in the form
+    const clearError = useCallback(() => {
+        setState((prev) => ({ ...prev, error: null }));
+    }, []);
+
     return (
         <AuthContext.Provider value={{
             ...state,
@@ -89,15 +110,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             logout,
             googleLogin,
             setUser,
+            clearError,
         }}>
             {children}
         </AuthContext.Provider>
     );
 };
-
-// ─────────────────────────────────────────────
-// Hook
-// ─────────────────────────────────────────────
 
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);

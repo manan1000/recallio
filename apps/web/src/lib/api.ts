@@ -35,7 +35,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         },
     });
 
-    const body = await res.json();
+    let body: any = null;
+
+    try {
+        body = await res.json();
+    } catch {
+        throw new ApiError(res.status, "INTERNAL_ERROR", "Invalid server response");
+    }
 
     // all responses now have success boolean
     if (!body.success) {
