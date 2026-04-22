@@ -44,6 +44,9 @@ importers:
       '@repo/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       arctic:
         specifier: ^3.7.0
         version: 3.7.0
@@ -114,6 +117,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.73.1(react@19.2.4))
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -334,6 +340,15 @@ importers:
       '@types/node':
         specifier: ^25.1.0
         version: 25.2.3
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/types:
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

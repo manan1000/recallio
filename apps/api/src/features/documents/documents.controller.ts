@@ -3,17 +3,14 @@ import { prisma } from "@repo/db";
 import { documentQueue } from "@repo/queue";
 import { createDocumentSchema } from "./documents.schema";
 import { createSignedDownloadUrl } from "@repo/storage";
+import { success, failure, validationFailure } from "../../lib/response";
+import { ERROR_CODES } from "@repo/types";
 
 export const createDocument = async (req: Request, res: Response) => {
     try {
         const parsed = createDocumentSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                error: {
-                    issue: parsed.error.issues[0]?.path[0],
-                    message: parsed.error.issues[0]?.message
-                }
-            });
+            return validationFailure(res, parsed.error);
         }
 
         const userId = req.user!.id;
@@ -26,7 +23,7 @@ export const createDocument = async (req: Request, res: Response) => {
                 select: { id: true },
             });
             if (existing) {
-                return res.status(409).json({ error: "This URL has already been added" });
+                return failure(res, ERROR_CODES.CONFLICT, "This URL has already been added");
             }
         }
 
@@ -37,12 +34,12 @@ export const createDocument = async (req: Request, res: Response) => {
                 select: { id: true },
             });
             if (existing) {
-                return res.status(409).json({ error: "This note already exists" });
+                return failure(res, ERROR_CODES.CONFLICT, "This note already exists");
             }
         }
 
         if ((data.type === "IMAGE" || data.type === "PDF" || data.type === "DOCUMENT") && !data.filePath.startsWith(`${userId}/`)) {
-            return res.status(403).json({ error: "Invalid file path" });
+            return failure(res, ERROR_CODES.FORBIDDEN, "Invalid file path");
         }
 
         const document = await prisma.document.create({
@@ -70,10 +67,10 @@ export const createDocument = async (req: Request, res: Response) => {
             userId,
         });
 
-        return res.status(202).json({ document });
+        return success(res, { document }, 202);
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
@@ -105,7 +102,7 @@ export const listDocuments = async (req: Request, res: Response) => {
             }),
         ]);
 
-        return res.json({
+        return success(res, {
             documents,
             pagination: {
                 page,
@@ -116,7 +113,7 @@ export const listDocuments = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
@@ -141,11 +138,11 @@ export const getDocument = async (req: Request, res: Response) => {
         });
 
         if (!document) {
-            return res.status(404).json({ error: "Document not found" });
+            return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
         }
 
         if (document.userId !== req.user!.id) {
-            return res.status(403).json({ error: "Forbidden" });
+            return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
         }
 
         const resDocument = {
@@ -161,10 +158,10 @@ export const getDocument = async (req: Request, res: Response) => {
             createdAt: document.createdAt
         }
 
-        return res.json({ document: resDocument });
+        return success(res, { document: resDocument });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
@@ -182,17 +179,16 @@ export const getDocumentStatus = async (req: Request, res: Response) => {
         });
 
         if (!document) {
-            return res.status(404).json({ error: "Document not found" });
+            return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
         }
 
         if (document.userId !== req.user!.id) {
-            return res.status(403).json({ error: "Forbidden" });
+            return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
         }
-
-        return res.json({ id: document.id, status: document.status, error: document.error });
+        return success(res, { id: document.id, status: document.status, error: document.error });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
@@ -205,19 +201,19 @@ export const deleteDocument = async (req: Request, res: Response) => {
         });
 
         if (!document) {
-            return res.status(404).json({ error: "Document not found" });
+            return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
         }
 
         if (document.userId !== req.user!.id) {
-            return res.status(403).json({ error: "Forbidden" });
+            return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
         }
 
         await prisma.document.delete({ where: { id: docId } });
 
-        return res.json({ message: "Document deleted" });
+        return success(res, { message: "Document deleted" });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
@@ -231,21 +227,21 @@ export const downloadDocument = async (req: Request, res: Response) => {
         });
 
         if (!document) {
-            return res.status(404).json({ error: "Document not found" });
+            return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
         }
 
         if (document.userId !== req.user!.id) {
-            return res.status(403).json({ error: "Forbidden" });
+            return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
         }
 
         if (!document.filePath) {
-            return res.status(400).json({ error: "No file associated with this document" });
+            return failure(res, ERROR_CODES.NOT_FOUND, "No file associated with this document");
         }
 
         const downloadUrl = await createSignedDownloadUrl(document.filePath);
-        return res.json({ downloadUrl, fileName: document.fileName });
+        return success(res, { downloadUrl, fileName: document.fileName });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };

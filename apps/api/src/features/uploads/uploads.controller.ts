@@ -1,17 +1,14 @@
 import { Request, Response } from "express";
 import { createPresignedUpload } from "@repo/storage";
 import { presignSchema } from "./uploads.schema";
+import { success, failure, validationFailure } from "../../lib/response";
+import { ERROR_CODES } from "@repo/types";
 
 export const presignUpload = async (req: Request, res: Response) => {
     try {
         const parsed = presignSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                error: {
-                    issue: parsed.error.issues[0]?.path[0],
-                    message: parsed.error.issues[0]?.message
-                }
-            });
+            return validationFailure(res, parsed.error);
         }
 
         const { fileName, mimeType, fileSize } = parsed.data;
@@ -23,12 +20,12 @@ export const presignUpload = async (req: Request, res: Response) => {
             fileSize
         );
 
-        return res.json(result);
+        return success(res, result);
     } catch (err: any) {
         if (err.message === "File type not supported" || err.message === "File size exceeds 20MB limit") {
-            return res.status(400).json({ error: err.message });
+            return failure(res, ERROR_CODES.VALIDATION_ERROR, err.message);
         }
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };

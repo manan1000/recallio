@@ -6,17 +6,14 @@ import { registerSchema, loginSchema } from "./auth.schema";
 import { google } from "../../lib/oauth2";
 import { generateState, generateCodeVerifier, decodeIdToken } from "arctic";
 import { setCookie } from "../../lib/set-cookie";
+import { success, failure, validationFailure } from "../../lib/response";
+import { ERROR_CODES } from "@repo/types";
 
 export const register = async (req: Request, res: Response) => {
     try {
         const parsed = registerSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                error: {
-                    issue: parsed.error.issues[0]?.path[0],
-                    message: parsed.error.issues[0]?.message
-                }
-            });
+            return validationFailure(res, parsed.error);
         }
 
         const { email, password, name } = parsed.data;
@@ -26,7 +23,7 @@ export const register = async (req: Request, res: Response) => {
 
         const existing = await prisma.user.findUnique({ where: { email } });
         if (existing) {
-            return res.status(409).json({ error: "An account with this email already exists" });
+            return failure(res, ERROR_CODES.CONFLICT, "An account with this email already exists");
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
@@ -41,10 +38,10 @@ export const register = async (req: Request, res: Response) => {
 
         const token = signToken({ userId: user.id, email: user.email });
         setCookie(res, token);
-        return res.status(201).json({ user });
+        return success(res, { user }, 201);
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
@@ -52,40 +49,33 @@ export const login = async (req: Request, res: Response) => {
     try {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                error: {
-                    issue: parsed.error.issues[0]?.path[0],
-                    message: parsed.error.issues[0]?.message
-                }
-            });
+            return validationFailure(res, parsed.error);
         }
 
         const { email, password } = parsed.data;
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user || !user.password) {
-            return res.status(401).json({ error: "Invalid credentials" });
+            return failure(res, ERROR_CODES.UNAUTHORIZED, "Invalid credentials");
         }
 
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) {
-            return res.status(401).json({ error: "Invalid credentials" });
+            return failure(res, ERROR_CODES.UNAUTHORIZED, "Invalid credentials");
         }
 
         const token = signToken({ userId: user.id, email: user.email });
         setCookie(res, token);
-        return res.status(200).json({
-            user: { id: user.id, email: user.email, name: user.name },
-        });
+        return success(res, { user: { id: user.id, email: user.email, name: user.name } });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
 export const logout = async (req: Request, res: Response) => {
     res.clearCookie("auth_token", { path: "/" });
-    return res.json({ message: "Logged out" });
+    return success(res, { message: "Logged out" });
 };
 
 export const oauthCallback = async (
@@ -164,7 +154,7 @@ export const googleRedirect = async (req: Request, res: Response) => {
         return res.redirect(url.toString());
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
 
@@ -176,7 +166,9 @@ export const googleCallback = async (req: Request, res: Response) => {
 
         // validate state to prevent CSRF
         if (!code || !state || state !== storedState || !codeVerifier) {
-            return res.status(400).json({ error: "Invalid OAuth state" });
+            return res.redirect(
+                `${process.env.CORS_ORIGIN}/login?error=oauth_failed`
+            );
         }
 
         const tokens = await google.validateAuthorizationCode(code, codeVerifier);

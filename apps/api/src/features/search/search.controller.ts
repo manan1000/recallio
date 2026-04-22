@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { embedQuery } from "@repo/ai";
 import { searchSimilarChunks } from "../chats/chats.search";
+import { success, failure } from "../../lib/response";
+import { ERROR_CODES } from "@repo/types";
 
 const SEARCH_LIMIT = 10;
 
@@ -10,7 +12,7 @@ export const search = async (req: Request, res: Response) => {
     const trimmedQuery = query?.trim();
 
     if (!trimmedQuery || trimmedQuery.length === 0) {
-      return res.status(400).json({ error: "Query parameter q is required" });
+      return failure(res, ERROR_CODES.VALIDATION_ERROR, "Query parameter q is required");
     }
 
     if (trimmedQuery.length < 3) {
@@ -21,7 +23,7 @@ export const search = async (req: Request, res: Response) => {
     const embedding = await embedQuery(trimmedQuery);
     const results = await searchSimilarChunks(embedding, userId, SEARCH_LIMIT);
 
-    return res.json({
+    return success(res, {
       query: trimmedQuery,
       results: results.map((r) => ({
         documentId: r.documentId,
@@ -34,6 +36,6 @@ export const search = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Something went wrong" });
+    return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
   }
 };

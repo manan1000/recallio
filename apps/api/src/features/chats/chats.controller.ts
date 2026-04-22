@@ -3,7 +3,8 @@ import { prisma } from "@repo/db";
 import { openai, embedQuery } from "@repo/ai";
 import { createChatSchema, sendMessageSchema } from "./chat.schema";
 import { searchSimilarChunks } from "./chats.search";
-
+import { success, failure, validationFailure } from "../../lib/response";
+import { ERROR_CODES } from "@repo/types";
 const SCOPED_K = 5;
 const GLOBAL_K = 8;
 
@@ -11,12 +12,7 @@ export const createChat = async (req: Request, res: Response) => {
   try {
     const parsed = createChatSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({
-        error: {
-          issue: parsed.error.issues[0]?.path[0],
-          message: parsed.error.issues[0]?.message,
-        },
-      });
+      return validationFailure(res, parsed.error);
     }
 
     const userId = req.user!.id;
@@ -30,13 +26,13 @@ export const createChat = async (req: Request, res: Response) => {
       });
 
       if (!document) {
-        return res.status(404).json({ error: "Document not found" });
+        return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
       }
       if (document.userId !== userId) {
-        return res.status(403).json({ error: "Forbidden" });
+        return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
       }
       if (document.status !== "COMPLETED") {
-        return res.status(400).json({ error: "Document is not ready yet" });
+        return failure(res, ERROR_CODES.VALIDATION_ERROR, "Document is not ready yet");
       }
     }
 
@@ -54,10 +50,10 @@ export const createChat = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(201).json({ chat });
+    return success(res, { chat }, 201);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Something went wrong" });
+    return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
   }
 };
 
@@ -84,10 +80,10 @@ export const listChats = async (req: Request, res: Response) => {
       },
     });
 
-    return res.json({ chats });
+    return success(res, { chats });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Something went wrong" });
+    return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
   }
 };
 
@@ -127,7 +123,7 @@ export const getChat = async (req: Request, res: Response) => {
     return res.json({ chat: resChat });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Something went wrong" });
+    return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
   }
 };
 
@@ -140,18 +136,18 @@ export const deleteChat = async (req: Request, res: Response) => {
     });
 
     if (!chat) {
-      return res.status(404).json({ error: "Chat not found" });
+      return failure(res, ERROR_CODES.NOT_FOUND, "Chat not found");
     }
 
     if (chat.userId !== req.user!.id) {
-      return res.status(403).json({ error: "Forbidden" });
+      return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
     }
 
     await prisma.chat.delete({ where: { id: chatId } });
-    return res.json({ message: "Chat deleted" });
+    return success(res, { message: "Chat deleted" });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Something went wrong" });
+    return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
   }
 };
 
@@ -160,12 +156,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     const chatId = req.params.id as string;
     const parsed = sendMessageSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({
-        error: {
-          issue: parsed.error.issues[0]?.path[0],
-          message: parsed.error.issues[0]?.message,
-        },
-      });
+      return validationFailure(res, parsed.error);
     }
 
     const userId = req.user!.id;
@@ -186,8 +177,8 @@ export const sendMessage = async (req: Request, res: Response) => {
       },
     });
 
-    if (!chat) return res.status(404).json({ error: "Chat not found" });
-    if (chat.userId !== userId) return res.status(403).json({ error: "Forbidden" });
+    if (!chat) return failure(res, ERROR_CODES.NOT_FOUND, "Chat not found");
+    if (chat.userId !== userId) return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
 
     // embed the user message
     const queryEmbedding = await embedQuery(message);
@@ -202,9 +193,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     );
 
     if (similarChunks.length === 0) {
-      return res.status(400).json({
-        error: "No relevant content found. Add some documents first.",
-      });
+      return failure(res, ERROR_CODES.NOT_FOUND, "No relevant content found. Add some documents first.");
     }
 
     // build context from chunks
