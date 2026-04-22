@@ -194,9 +194,9 @@ export const googleCallback = async (req: Request, res: Response) => {
 
 export const me = async (req: Request, res: Response) => {
     try {
-        return res.status(200).json({ user: req.user });
+        return success(res, { user: req.user });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
