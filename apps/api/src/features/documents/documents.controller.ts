@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/db";
 import { documentQueue } from "@repo/queue";
 import { createDocumentSchema, updateDocumentSchema } from "./documents.schema";
-import { createSignedDownloadUrl } from "@repo/storage";
+import { createSignedDownloadUrl, deleteFile } from "@repo/storage";
 import { success, failure, validationFailure } from "../../lib/response";
 import { ERROR_CODES } from "@repo/types";
 
@@ -211,27 +211,38 @@ export const updateDocument = async (req: Request, res: Response) => {
             return failure(res, ERROR_CODES.VALIDATION_ERROR, "Only notes can be edited");
         }
 
+        //delete all existing chunks — their embeddings are now stale
+        // since the content has changed, keeping them would poison the vector search
+        await prisma.chunk.deleteMany({ where: { documentId: docId } });
+
+        // update the document — only rawContent and title
+        // cleanContent and summary are left for the worker to regenerate
+        // status resets to PENDING so the UI shows the document is being re-processed
         const updated = await prisma.document.update({
             where: { id: docId },
             data: {
                 ...(parsed.data.title && { title: parsed.data.title }),
-                // updating rawContent and cleanContent together keeps them in sync
-                // the worker originally set both when processing — we mirror that here
-                ...(parsed.data.content && {
-                    rawContent: parsed.data.content,
-                    cleanContent: parsed.data.content,
-                }),
+                ...(parsed.data.content && { rawContent: parsed.data.content }),
+                // clear the old summary and cleanContent since they're now stale
+                cleanContent: null,
+                summary: null,
+                status: "PENDING",
+                error: null,
             },
             select: {
                 id: true,
                 type: true,
-                title: true,
                 status: true,
                 createdAt: true,
             },
         });
 
-        return success(res, { document: updated });
+        // add back to the processing queue so the worker re-embeds the new content
+        await documentQueue.add("process", {
+            documentId: updated.id,
+            userId: req.user!.id,
+        });
+        return success(res, { document: updated }, 202);
     } catch (err) {
         console.error(err);
         return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
@@ -243,26 +254,30 @@ export const deleteDocument = async (req: Request, res: Response) => {
         const docId = req.params.id as string;
         const document = await prisma.document.findUnique({
             where: { id: docId },
-            select: { id: true, userId: true },
+            // fetch filePath so we know what to delete from Supabase
+            select: { id: true, userId: true, type: true, filePath: true },
         });
 
-        if (!document) {
-            return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
-        }
+        if (!document) return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
+        if (document.userId !== req.user!.id) return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
 
-        if (document.userId !== req.user!.id) {
-            return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
+        if (document.filePath && ["PDF", "IMAGE", "DOCUMENT"].includes(document.type)
+        ) {
+            try {
+                await deleteFile(document.filePath);
+            } catch (err) {
+                // log but don't fail the whole request — a missing Supabase file
+                // shouldn't prevent the user from cleaning up their knowledge base
+                console.error(`Failed to delete file from Supabase: ${document.filePath}`, err);
+            }
         }
-
         await prisma.document.delete({ where: { id: docId } });
-
         return success(res, { message: "Document deleted" });
     } catch (err) {
         console.error(err);
         return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
-
 
 export const downloadDocument = async (req: Request, res: Response) => {
     try {

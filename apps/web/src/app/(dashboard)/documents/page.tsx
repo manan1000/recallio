@@ -253,7 +253,7 @@ function FileUploadTab({
                                 </span>
                                 {selectedFile && (
                                     <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                                        {(selectedFile.size / (1024 * 1024)).toFixed(1)}MB
+                                        {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
                                     </span>
                                 )}
                             </label>

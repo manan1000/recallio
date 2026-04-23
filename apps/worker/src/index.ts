@@ -59,7 +59,8 @@ const worker = new Worker<DocumentJobData>("document-processing", async (job: Jo
                 break;
             }
             case "IMAGE": {
-                if (!document.fileUrl) throw new UnrecoverableError("Missing file URL");
+                if (!document.filePath) throw new UnrecoverableError("Missing file path");
+                const buffer = await fetchFileAsBuffer(document.filePath);
                 rawText = await processImage(document.fileUrl);
                 break;
             }
