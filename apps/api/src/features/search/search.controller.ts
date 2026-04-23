@@ -16,7 +16,7 @@ export const search = async (req: Request, res: Response) => {
     }
 
     if (trimmedQuery.length < 3) {
-      return res.status(400).json({ error: "Query must be at least 3 characters" });
+      return failure(res, ERROR_CODES.VALIDATION_ERROR, "Query must be at least 3 characters");
     }
 
     const userId = req.user!.id;

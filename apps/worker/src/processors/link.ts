@@ -34,11 +34,11 @@ export const processLink = async (url: string): Promise<string> => {
     const res = await fetch(url, {
         signal: AbortSignal.timeout(10000),
         headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; KnowledgeBase/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; Recallio/1.0)",
         },
     });
 
-    if (!res.ok) throw new Error(`Failed to fetch URL: ${res.status}`);
+    if (!res.ok) throw new Error(`Failed to fetch URL: ${url}`);
 
     const html = await res.text();
     const $ = cheerio.load(html);

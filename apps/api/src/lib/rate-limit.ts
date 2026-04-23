@@ -2,6 +2,8 @@ import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import { RedisStore, RedisReply } from "rate-limit-redis";
 import { redis } from "@repo/queue";
 import { Request } from "express";
+import { failure } from "./response";
+import { ERROR_CODES } from "@repo/types";
 
 const createStore = (prefix: string) =>
     new RedisStore({
@@ -16,7 +18,7 @@ export const generalLimiter = rateLimit({
     keyGenerator: (req: Request) => req.user?.id ?? ipKeyGenerator(req.ip!) ?? "unknown",
     store: createStore("rl:general:"),
     handler: (_req, res) => {
-        res.status(429).json({ error: "Too many requests, please slow down" });
+        return failure(res,ERROR_CODES.RATE_LIMITED,"Too many requests, please slow down");
     },
     skip: (req: Request) => !req.user, // auth routes handle their own limiting
 });
@@ -28,7 +30,7 @@ export const chatLimiter = rateLimit({
     keyGenerator: (req: Request) => req.user?.id ?? ipKeyGenerator(req.ip!) ?? "unknown",
     store: createStore("rl:chat:"),
     handler: (_req, res) => {
-        res.status(429).json({ error: "Too many messages, please wait a moment" });
+        return failure(res,ERROR_CODES.RATE_LIMITED,"Too many messages, please wait a moment");
     },
 });
 
@@ -39,7 +41,7 @@ export const searchLimiter = rateLimit({
     keyGenerator: (req: Request) => req.user?.id ?? ipKeyGenerator(req.ip!) ?? "unknown",
     store: createStore("rl:search:"),
     handler: (_req, res) => {
-        res.status(429).json({ error: "Too many search requests, please slow down" });
+        return failure(res,ERROR_CODES.RATE_LIMITED,"Too many search requests, please slow down");
     },
 });
 
@@ -50,6 +52,6 @@ export const authLimiter = rateLimit({
     keyGenerator: (req: Request) => ipKeyGenerator(req.ip!) ?? "unknown",
     store: createStore("rl:auth:"),
     handler: (_req, res) => {
-        res.status(429).json({ error: "Too many attempts, please try again later" });
+        return failure(res,ERROR_CODES.RATE_LIMITED,"Too many attempts, please try again later");
     },
 });

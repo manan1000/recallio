@@ -112,11 +112,11 @@ export const getChat = async (req: Request, res: Response) => {
     });
 
     if (!chat) {
-      return res.status(404).json({ error: "Chat not found" });
+      return failure(res, ERROR_CODES.NOT_FOUND, "Chat not found");
     }
 
     if (chat.userId !== req.user!.id) {
-      return res.status(403).json({ error: "Forbidden" });
+      return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
     }
 
     const { userId: _, ...resChat } = chat;
@@ -288,7 +288,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     console.error(err);
     // if headers already sent we can't send JSON error
     if (!res.headersSent) {
-      return res.status(500).json({ error: "Something went wrong" });
+      return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
     res.write(`data: ${JSON.stringify({ error: "Something went wrong" })}\n\n`);
     res.end();
