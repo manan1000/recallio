@@ -14,7 +14,7 @@ import {
     DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
 import {
-    MoreHorizontal,
+    MoreVertical,
     Trash2,
     ExternalLink,
     MessageSquare,
@@ -106,7 +106,7 @@ export function DocumentCard({
                             className="p-1 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                             aria-label="Document options"
                         >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreVertical className="h-4 w-4" />
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44">
@@ -162,9 +162,9 @@ export function DocumentCard({
                     </span>
                     <span>·</span>
                     <span>
-                        {new Date(doc.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
+                        {new Date(doc.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
+                            month: "short",
                             year: "numeric",
                         })}
                     </span>

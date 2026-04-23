@@ -14,7 +14,7 @@ import { z } from "zod";
 // routing
 import { useRouter } from "next/navigation";
 
-// your API client and error class
+// API client and error class
 import { documentsApi, uploadsApi, ApiError } from "@/lib/api";
 
 // shared types
@@ -205,13 +205,6 @@ function FileUploadTab({
                     render={({ field: { onChange }, fieldState }) => (
                         <Field data-invalid={fieldState.invalid}>
                             <FieldLabel htmlFor={`${documentType}-file`}>File</FieldLabel>
-
-                            {/*
-                The actual <input type="file"> is hidden because browsers
-                render it differently and it's hard to style consistently.
-                Instead we show a styled <label> that opens the file picker
-                when clicked — labels are linked to inputs via the htmlFor/id pair.
-              */}
                             <input
                                 id={`${documentType}-file`}
                                 type="file"
@@ -260,7 +253,7 @@ function FileUploadTab({
                                 </span>
                                 {selectedFile && (
                                     <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                                        {(selectedFile.size / (1024 * 1024)).toFixed(1)}MB
+                                        {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
                                     </span>
                                 )}
                             </label>
@@ -435,7 +428,7 @@ function AddDocumentDialog({
                 <DialogHeader>
                     <DialogTitle>Add to Knowledge Base</DialogTitle>
                     <DialogDescription>
-                        Add a link, YouTube video, note, or file to your knowledge base.
+                        Add a link, YouTube video, note, image or file to your knowledge base.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -887,7 +880,7 @@ export default function DocumentsPage() {
                     </p>
                 </div>
                 <Button onClick={() => setAddDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4" />
                     Add Document
                 </Button>
             </div>
@@ -900,11 +893,11 @@ export default function DocumentsPage() {
                     </div>
                     <h2 className="text-xl font-semibold mb-2">No documents yet</h2>
                     <p className="text-muted-foreground mb-6 max-w-sm">
-                        Add links, YouTube videos, notes, or files to start building your
+                        Add links, YouTube videos, notes, images or files to start building your
                         knowledge base.
                     </p>
                     <Button onClick={() => setAddDialogOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-4 w-4" />
                         Add your first document
                     </Button>
                 </div>
