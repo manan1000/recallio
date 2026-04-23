@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@repo/ui/components/tooltip";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
     const [queryClient] = useState(
@@ -33,9 +34,11 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
     return (
         <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-                <AuthProvider>
-                    {children}
-                </AuthProvider>
+                <TooltipProvider>
+                    <AuthProvider>
+                        {children}
+                    </AuthProvider>
+                </TooltipProvider>
             </ThemeProvider>
             <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>

@@ -18,6 +18,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarRail,
     SidebarSeparator,
 } from "@repo/ui/components/sidebar";
 import {
@@ -93,17 +94,17 @@ export function AppSidebar() {
     };
 
     return (
-        <Sidebar>
+        <Sidebar collapsible="icon">
             {/* ── Header ── */}
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton asChild tooltip="Recallio">
                             <Link href="/dashboard">
-                                <div className="flex items-center gap-2">
-                                    <Brain className="h-6 w-6 text-primary" />
-                                    <span className="font-bold text-lg">Recallio</span>
-                                </div>
+                                <Brain className="h-5 w-5 text-primary" />
+                                <span className="font-bold text-base group-data-[collapsible=icon]:hidden">
+                                    Recallio
+                                </span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -126,7 +127,7 @@ export function AppSidebar() {
 
                                 return (
                                     <SidebarMenuItem key={item.href}>
-                                        <SidebarMenuButton asChild isActive={isActive}>
+                                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
                                             <Link href={item.href}>
                                                 <item.icon className="h-4 w-4" />
                                                 <span>{item.label}</span>
@@ -149,6 +150,7 @@ export function AppSidebar() {
                                 <SidebarMenuButton
                                     onClick={handleNewChat}
                                     className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                    tooltip="New chat"
                                 >
                                     <Plus className="h-4 w-4" />
                                     <span>New Chat</span>
@@ -243,6 +245,7 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
+            <SidebarRail />
         </Sidebar>
     );
 }
