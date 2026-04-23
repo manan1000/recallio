@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/db";
 import { documentQueue } from "@repo/queue";
-import { createDocumentSchema } from "./documents.schema";
+import { createDocumentSchema, updateDocumentSchema } from "./documents.schema";
 import { createSignedDownloadUrl } from "@repo/storage";
 import { success, failure, validationFailure } from "../../lib/response";
 import { ERROR_CODES } from "@repo/types";
@@ -186,6 +186,52 @@ export const getDocumentStatus = async (req: Request, res: Response) => {
             return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
         }
         return success(res, { id: document.id, status: document.status, error: document.error });
+    } catch (err) {
+        console.error(err);
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
+    }
+};
+
+export const updateDocument = async (req: Request, res: Response) => {
+    try {
+        const docId = req.params.id as string;
+
+        const parsed = updateDocumentSchema.safeParse(req.body);
+
+        if (!parsed.success) return validationFailure(res, parsed.error);
+
+        const document = await prisma.document.findUnique({
+            where: { id: docId },
+            select: { id: true, userId: true, type: true },
+        });
+
+        if (!document) return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
+        if (document.userId !== req.user!.id) return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
+        if (document.type !== "NOTE") {
+            return failure(res, ERROR_CODES.VALIDATION_ERROR, "Only notes can be edited");
+        }
+
+        const updated = await prisma.document.update({
+            where: { id: docId },
+            data: {
+                ...(parsed.data.title && { title: parsed.data.title }),
+                // updating rawContent and cleanContent together keeps them in sync
+                // the worker originally set both when processing — we mirror that here
+                ...(parsed.data.content && {
+                    rawContent: parsed.data.content,
+                    cleanContent: parsed.data.content,
+                }),
+            },
+            select: {
+                id: true,
+                type: true,
+                title: true,
+                status: true,
+                createdAt: true,
+            },
+        });
+
+        return success(res, { document: updated });
     } catch (err) {
         console.error(err);
         return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");

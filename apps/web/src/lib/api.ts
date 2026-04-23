@@ -108,6 +108,13 @@ export const documentsApi = {
             { method: "POST", body: JSON.stringify(data) }
         ),
 
+    // PATCH only works for NOTE type — backend enforces this
+    update: (id: string, data: { title?: string; content?: string }) =>
+        request<{ document: Document }>(`/api/documents/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        }),
+
     delete: (id: string) =>
         request<{ message: string }>(`/api/documents/${id}`, {
             method: "DELETE",

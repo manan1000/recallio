@@ -3,7 +3,7 @@ import { z } from "zod";
 const optionalTitle = z.string().trim().min(1).optional();
 
 const validUrl = z.string().trim().pipe(
-  z.httpUrl({ normalize: true, message: "Must be a valid HTTP or HTTPS URL"})
+  z.httpUrl({ normalize: true, message: "Must be a valid HTTP or HTTPS URL" })
 ).refine((url) => {
   try {
     const { hostname } = new URL(url);
@@ -72,5 +72,11 @@ export const createDocumentSchema = z.discriminatedUnion("type", [
     title: optionalTitle,
   }).strict(),
 ]);
+
+
+export const updateDocumentSchema = z.object({
+  title: z.string().trim().min(1).optional(),
+  content: z.string().trim().min(1).optional(),
+});
 
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
