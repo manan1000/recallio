@@ -1,3 +1,4 @@
+import { UnrecoverableError } from 'bullmq';
 import { fetchTranscript } from 'youtube-transcript-plus';
 
 const USER_AGENTS = [
@@ -12,7 +13,9 @@ const randomAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.len
 export const processYoutube = async (url: string): Promise<string> => {
     const segments = await fetchTranscript(url, { userAgent: randomAgent() });
     if (!segments || segments.length === 0) {
-        throw new Error("No transcript available for this video");
+        throw new UnrecoverableError(
+            "No transcript available for this video. The video owner may have disabled captions, or this video may not support transcripts."
+        );
     }
 
     const transcript = segments

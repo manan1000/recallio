@@ -47,6 +47,7 @@ export const createChat = async (req: Request, res: Response) => {
         title: true,
         documentId: true,
         createdAt: true,
+        updatedAt: true
       },
     });
 
@@ -120,7 +121,7 @@ export const getChat = async (req: Request, res: Response) => {
     }
 
     const { userId: _, ...resChat } = chat;
-    return res.json({ chat: resChat });
+    return success(res, { chat: resChat });
   } catch (err) {
     console.error(err);
     return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
@@ -169,6 +170,7 @@ export const sendMessage = async (req: Request, res: Response) => {
         id: true,
         userId: true,
         documentId: true,
+        title: true,
         messages: {
           orderBy: { createdAt: "asc" },
           take: 10,
@@ -225,7 +227,26 @@ export const sendMessage = async (req: Request, res: Response) => {
         content: message,
       },
     });
+    // after saving the user message, before streaming starts
+    // check if this is the first message and the chat has no title
+    const messageCount = await prisma.message.count({
+      where: { chatId: chat.id },
+    });
 
+    if (messageCount === 1 && !chat.title) {
+      // truncate to 50 chars and add ellipsis if needed
+      const autoTitle = message.length > 50
+        ? message.slice(0, 50).trim() + "..."
+        : message.trim();
+
+      await prisma.chat.update({
+        where: { id: chat.id },
+        data: {
+          title: autoTitle,
+          updatedAt: new Date()
+        },
+      });
+    }
     // set SSE headers for streaming
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");

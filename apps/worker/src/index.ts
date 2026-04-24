@@ -88,14 +88,16 @@ const worker = new Worker<DocumentJobData>("document-processing", async (job: Jo
 
 
         // Step 5 — delete chunks if process failed then save chunks to DB
-        await prisma.$transaction(async (tx) => {
-            await tx.chunk.deleteMany({
-                where: { documentId },
-            });
-            await Promise.all(      // runs all inserts concurrently (faster than sequential inserts).
-                embeddedChunks.map(async (chunk) => {
-                    const id = createId();
-                    await tx.$executeRaw`
+        // delete existing chunks first
+        await prisma.chunk.deleteMany({ where: { documentId } });
+
+        // insert chunks in parallel without a transaction
+        // no transaction needed because deleteMany already cleaned up
+        // and if this fails mid-way, the retry will deleteMany again
+        await Promise.all(
+            embeddedChunks.map(async (chunk) => {
+                const id = createId();
+                await prisma.$executeRaw`
                     INSERT INTO "Chunk" (id, "documentId", content, "order", embedding, "createdAt")
                     VALUES (
                         ${id},
@@ -106,40 +108,40 @@ const worker = new Worker<DocumentJobData>("document-processing", async (job: Jo
                         NOW()
                     )
                 `;
-            }));
+            })
+        );
+
+
+        // Step 6 — generate summary
+        const summary = await summarizeContent(clean);
+
+        // Step 7 — mark as COMPLETED
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                cleanContent: clean,
+                summary,
+                status: "COMPLETED",
+                error: null,
+            },
         });
 
+        console.log(`Document ${documentId} processed successfully — ${chunks.length} chunks`);
+    } catch (err: any) {
+        // mark as FAILED with error message
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                status: "FAILED",
+                error: err.message ?? "Unknown error",
+            },
+        });
 
-    // Step 6 — generate summary
-    const summary = await summarizeContent(clean);
-
-    // Step 7 — mark as COMPLETED
-    await prisma.document.update({
-        where: { id: documentId },
-        data: {
-            cleanContent: clean,
-            summary,
-            status: "COMPLETED",
-            error: null,
-        },
-    });
-
-    console.log(`Document ${documentId} processed successfully — ${chunks.length} chunks`);
-} catch (err: any) {
-    // mark as FAILED with error message
-    await prisma.document.update({
-        where: { id: documentId },
-        data: {
-            status: "FAILED",
-            error: err.message ?? "Unknown error",
-        },
-    });
-
-    throw err; // rethrow so BullMQ records the failure and retries
-}
+        throw err; // rethrow so BullMQ records the failure and retries
+    }
 },
-{
-    connection: redis,
+    {
+        connection: redis,
         concurrency: 5, // process up to 5 documents at once
     }
 );

@@ -58,6 +58,7 @@ import {
     TabsTrigger,
 } from "@repo/ui/components/tabs";
 import { Plus, FileText, Loader2, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 // ─────────────────────────────────────────────
 // Constants — accepted file types per document type
@@ -304,7 +305,7 @@ function AddDocumentDialog({
 
     // tracks which of the three upload phases we're in for file uploads
     // "idle" means no upload is in progress
-    const [uploadState, setUploadState] = useState<"idle" | "presigning" | "uploading" | "creating"> ("idle");
+    const [uploadState, setUploadState] = useState<"idle" | "presigning" | "uploading" | "creating">("idle");
 
     // isPending is true during file upload phases
     const isPending = uploadState !== "idle";
@@ -342,12 +343,13 @@ function AddDocumentDialog({
             resetAll();
             onSuccess();
             onClose();
+            toast.success("Document added to your knowledge base");
         },
         onError: (err) => {
             setUploadState("idle");
-            setServerError(
-                err instanceof ApiError ? err.message : "Something went wrong"
-            );
+            const message = err instanceof ApiError ? err.message : "Something went wrong";
+            setServerError(message);
+            toast.error(message);
         },
     });
 
@@ -863,7 +865,12 @@ export default function DocumentsPage() {
             // invalidate all document pages since deleting can shift items around
             queryClient.invalidateQueries({ queryKey: ["documents"] });
             setDeleteId(null);
+            toast.success("Document deleted");
         },
+        onError: () => {
+            toast.error("Failed to delete document");
+        },
+
     });
 
     return (

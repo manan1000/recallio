@@ -81,12 +81,12 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2">
                         <Button variant="outline" asChild>
                             <Link href="/search">
-                                <Search className="h-4 w-4 mr-2" />
+                                <Search className="h-4 w-4" />
                                 Search
                             </Link>
                         </Button>
                         <Button onClick={() => router.push("/chat")}>
-                            <MessageSquare className="h-4 w-4 mr-2" />
+                            <MessageSquare className="h-4 w-4" />
                             New Chat
                         </Button>
                     </div>

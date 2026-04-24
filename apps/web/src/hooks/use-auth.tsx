@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { User } from "@repo/types";
 import { authApi, ApiError } from "@/lib/api";
+import { toast } from "sonner";
 
 type AuthState = {
     user: User | null;
@@ -79,6 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setState((prev) => ({ ...prev, loading: true, error: null }));
             await authApi.logout();
             setState({ user: null, loading: false, error: null });
+            toast.success("Signed out successfully");
         } catch (err) {
             const message = err instanceof ApiError
                 ? err.message

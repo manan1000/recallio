@@ -182,7 +182,14 @@ export function AppSidebar() {
                                     No chats yet. Start a new chat above.
                                 </p>
                             )}
-
+                            {recentChats.length > 0 && (
+                                <Link
+                                    href="/chat/chats"
+                                    className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors group-data-[collapsible=icon]:hidden"
+                                >
+                                    View all chats →
+                                </Link>
+                            )}
                             {/* render each recent chat */}
                             {recentChats.map((chat: Chat) => {
                                 const isActive = pathname === `/chat/${chat.id}`;

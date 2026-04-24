@@ -84,6 +84,7 @@ export function DocumentCard({
         select: (data) => {
             if (data.status === "COMPLETED" || data.status === "FAILED") {
                 queryClient.invalidateQueries({ queryKey: ["documents"] });
+                queryClient.invalidateQueries({ queryKey: ["document", doc.id] });
             }
             return data;
         },

@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@repo/ui/components/tooltip";
+import { Toaster } from "@repo/ui/components/sonner";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
     const [queryClient] = useState(
@@ -40,7 +41,9 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
                     </AuthProvider>
                 </TooltipProvider>
             </ThemeProvider>
+            <Toaster richColors position="bottom-right" />
             <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
     );
+
 };
