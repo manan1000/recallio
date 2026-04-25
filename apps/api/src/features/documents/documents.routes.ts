@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createDocument, listDocuments, getDocument, getDocumentStatus, deleteDocument, downloadDocument, updateDocument } from "./documents.controller";
+import { createDocument, listDocuments, getDocument, getDocumentStatus, deleteDocument, downloadDocument, updateDocument, retryDocument } from "./documents.controller";
 import { requireAuth } from "../../middleware/auth";
 
 export const documentsRouter: Router = Router();
@@ -13,3 +13,4 @@ documentsRouter.get("/:id/status", getDocumentStatus);
 documentsRouter.patch("/:id", updateDocument);
 documentsRouter.delete("/:id", deleteDocument);
 documentsRouter.get("/:id/download", downloadDocument);
+documentsRouter.post("/:id/retry", retryDocument);

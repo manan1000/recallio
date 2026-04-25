@@ -851,9 +851,17 @@ export default function DocumentsPage() {
     // fetch one page of documents
     // queryKey includes page so each page gets its own cache entry
     // navigating back to page 1 shows cached data instantly
+
     const { data, isLoading } = useQuery({
-        queryKey: ["documents", page],
-        queryFn: () => documentsApi.list(page, 12),
+        queryKey: ["documents"],
+        queryFn: () => documentsApi.list(1, 6),
+        refetchInterval: (query) => {
+            const docs = query.state.data?.documents ?? [];
+            const hasProcessing = docs.some(
+                (d) => d.status === "PENDING" || d.status === "PROCESSING"
+            );
+            return hasProcessing ? 3000 : false;
+        },
     });
 
     const documents = data?.documents ?? [];

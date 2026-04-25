@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "@repo/db";
 import { signToken } from "../../lib/jwt";
-import { registerSchema, loginSchema } from "./auth.schema";
+import { registerSchema, loginSchema, updateProfileSchema } from "./auth.schema";
 import { google } from "../../lib/oauth2";
 import { generateState, generateCodeVerifier, decodeIdToken } from "arctic";
 import { setCookie } from "../../lib/set-cookie";
@@ -199,4 +199,45 @@ export const me = async (req: Request, res: Response) => {
         console.error(err);
         return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
+};
+
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const parsed = updateProfileSchema.safeParse(req.body);
+
+    if (!parsed.success) return validationFailure(res, parsed.error);
+
+    const userId = req.user!.id;
+    const { name, currentPassword, newPassword } = parsed.data;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, password: true },
+    });
+
+    if (!user) return failure(res, ERROR_CODES.NOT_FOUND, "User not found");
+
+    if (newPassword && currentPassword) {
+      if (!user.password) {
+        return failure(res, ERROR_CODES.VALIDATION_ERROR, "Cannot set password for OAuth accounts");
+      }
+      const valid = await bcrypt.compare(currentPassword, user.password);
+      if (!valid) return failure(res, ERROR_CODES.UNAUTHORIZED, "Current password is incorrect");
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(name && { name }),
+        ...(newPassword && { password: await bcrypt.hash(newPassword, 10) }),
+      },
+      select: { id: true, email: true, name: true },
+    });
+
+    return success(res, { user: updated });
+  } catch (err) {
+    console.error(err);
+    return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
+  }
 };

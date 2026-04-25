@@ -27,7 +27,7 @@ export default function NewChatPage() {
         };
 
         createAndRedirect();
-    }, []);
+    }, [documentId,router]);
 
     return (
         <div className="flex h-full items-center justify-center">

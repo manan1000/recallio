@@ -25,11 +25,11 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Button } from "@repo/ui/components/button";
 
 // navigation items for the main menu
 // each has a label, url path, and lucide icon
@@ -37,6 +37,7 @@ const navItems = [
     { label: "Dashboard", href: "/dashboard", icon: Home },
     { label: "Documents", href: "/documents", icon: FileText },
     { label: "Search", href: "/search", icon: Search },
+    { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -238,11 +239,14 @@ export function AppSidebar() {
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
 
-                            <DropdownMenuContent
-                                side="top"
-                                align="start"
-                                className="w-56"
-                            >
+                            <DropdownMenuContent side="top" align="start" className="w-56">
+                                <DropdownMenuItem asChild>
+                                    <Link href="/settings">
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        <span>Settings</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>

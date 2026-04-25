@@ -82,6 +82,12 @@ export const authApi = {
     googleLogin: () => {
         window.location.href = `${BASE_URL}/api/auth/google`;
     },
+
+    updateProfile: (data: { name?: string; currentPassword?: string; newPassword?: string }) =>
+        request<{ user: User }>("/api/auth/profile", {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        }),
 };
 
 // ─────────────────────────────────────────────
@@ -118,6 +124,10 @@ export const documentsApi = {
     delete: (id: string) =>
         request<{ message: string }>(`/api/documents/${id}`, {
             method: "DELETE",
+        }),
+    retry: (id: string) =>
+        request<{ message: string }>(`/api/documents/${id}/retry`, {
+            method: "POST",
         }),
 
     download: (id: string) =>

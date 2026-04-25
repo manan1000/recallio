@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { documentsApi } from "@/lib/api";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { documentsApi, ApiError } from "@/lib/api";
 import type { Document, DocumentStatus } from "@repo/types";
 import { Badge } from "@repo/ui/components/badge";
 import {
@@ -23,7 +23,10 @@ import {
     AlertCircle,
     CheckCircle2,
     Clock,
+    RefreshCw
 } from "lucide-react";
+import { toast } from "sonner";
+
 
 const statusConfig: Record<DocumentStatus, {
     label: string;
@@ -73,20 +76,32 @@ export function DocumentCard({
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    useQuery({
-        queryKey: ["document", doc.id, "status"],
-        queryFn: () => documentsApi.getStatus(doc.id),
-        refetchInterval: (query) => {
-            const status = query.state.data?.status;
-            return status === "COMPLETED" || status === "FAILED" ? false : 1000;
+    // useQuery({
+    //     queryKey: ["document", doc.id, "status"],
+    //     queryFn: () => documentsApi.getStatus(doc.id),
+    //     refetchInterval: (query) => {
+    //         const status = query.state.data?.status;
+    //         return status === "COMPLETED" || status === "FAILED" ? false : 1000;
+    //     },
+    //     enabled: doc.status === "PENDING" || doc.status === "PROCESSING",
+    //     select: (data) => {
+    //         if (data.status === "COMPLETED" || data.status === "FAILED") {
+    //             queryClient.invalidateQueries({ queryKey: ["documents"] });
+    //             queryClient.invalidateQueries({ queryKey: ["document", doc.id] });
+    //         }
+    //         return data;
+    //     },
+    // });
+
+    const { mutate: retryDocument } = useMutation({
+        mutationFn: () => documentsApi.retry(doc.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["documents"] });
+            queryClient.invalidateQueries({ queryKey: ["document", doc.id] });
+            toast.success("Document queued for reprocessing");
         },
-        enabled: doc.status === "PENDING" || doc.status === "PROCESSING",
-        select: (data) => {
-            if (data.status === "COMPLETED" || data.status === "FAILED") {
-                queryClient.invalidateQueries({ queryKey: ["documents"] });
-                queryClient.invalidateQueries({ queryKey: ["document", doc.id] });
-            }
-            return data;
+        onError: () => {
+            toast.error("Failed to retry");
         },
     });
 
@@ -104,7 +119,7 @@ export function DocumentCard({
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
-                            className="p-1 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="p-1 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none transition-opacity"
                             aria-label="Document options"
                         >
                             <MoreVertical className="h-4 w-4" />
@@ -129,6 +144,13 @@ export function DocumentCard({
                             <DropdownMenuItem onClick={() => onEdit(doc)}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit note
+                            </DropdownMenuItem>
+                        )}
+
+                        {doc.status === "FAILED" && (
+                            <DropdownMenuItem onClick={() => retryDocument()}>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Retry processing
                             </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />

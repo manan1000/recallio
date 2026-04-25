@@ -306,3 +306,37 @@ export const downloadDocument = async (req: Request, res: Response) => {
         return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
     }
 };
+
+export const retryDocument = async (req: Request, res: Response) => {
+    try {
+        const docId = req.params.id as string;
+
+        const document = await prisma.document.findUnique({
+            where: { id: docId },
+            select: { id: true, userId: true, status: true },
+        });
+
+        if (!document) return failure(res, ERROR_CODES.NOT_FOUND, "Document not found");
+        if (document.userId !== req.user!.id) return failure(res, ERROR_CODES.FORBIDDEN, "Forbidden");
+        if (document.status !== "FAILED") {
+            return failure(res, ERROR_CODES.VALIDATION_ERROR, "Only failed documents can be retried");
+        }
+
+        // reset status and clear error
+        await prisma.document.update({
+            where: { id: docId },
+            data: { status: "PENDING", error: null },
+        });
+
+        // re-add to queue
+        await documentQueue.add("process", {
+            documentId: docId,
+            userId: req.user!.id,
+        });
+
+        return success(res, { message: "Document queued for reprocessing" });
+    } catch (err) {
+        console.error(err);
+        return failure(res, ERROR_CODES.INTERNAL_ERROR, "Something went wrong");
+    }
+};

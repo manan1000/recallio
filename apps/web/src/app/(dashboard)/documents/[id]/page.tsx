@@ -28,6 +28,7 @@ import {
     Clock,
     Trash2,
     Pencil,
+    RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import type { DocumentStatus } from "@repo/types";
@@ -85,6 +86,10 @@ export default function DocumentDetailPage({
     const { data, isLoading, error } = useQuery({
         queryKey: ["document", id],
         queryFn: () => documentsApi.get(id),
+        refetchInterval: (query) => {
+            const status = query.state.data?.document.status;
+            return status === "COMPLETED" || status === "FAILED" ? false : 2000;
+        },
     });
 
 
@@ -116,6 +121,18 @@ export default function DocumentDetailPage({
         },
         onError: () => {
             toast.error("Failed to delete document");
+        },
+    });
+
+    const { mutate: retryDocument, isPending: isRetrying } = useMutation({
+        mutationFn: () => documentsApi.retry(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["document", id] });
+            queryClient.invalidateQueries({ queryKey: ["documents"] });
+            toast.success("Document queued for reprocessing");
+        },
+        onError: () => {
+            toast.error("Failed to retry document");
         },
     });
 
@@ -276,9 +293,9 @@ export default function DocumentDetailPage({
             }
 
             {/* error state */}
-            {
-                document.status === "FAILED" && document.error && (
-                    <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 flex items-start gap-3">
+            {document.status === "FAILED" && document.error && (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-3">
+                    <div className="flex items-start gap-3">
                         <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                         <div>
                             <p className="text-sm font-medium text-destructive">
@@ -289,8 +306,27 @@ export default function DocumentDetailPage({
                             </p>
                         </div>
                     </div>
-                )
-            }
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => retryDocument()}
+                        disabled={isRetrying}
+                        className="w-full sm:w-auto"
+                    >
+                        {isRetrying ? (
+                            <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Retrying...
+                            </>
+                        ) : (
+                            <>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Retry processing
+                            </>
+                        )}
+                    </Button>
+                </div>
+            )}
 
             {/* processing state */}
             {

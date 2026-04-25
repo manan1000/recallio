@@ -42,6 +42,13 @@ export default function DashboardPage() {
     const { data: documentsData, isLoading: documentsLoading } = useQuery({
         queryKey: ["documents"],
         queryFn: () => documentsApi.list(1, 6),
+        refetchInterval: (query) => {
+            const docs = query.state.data?.documents ?? [];
+            const hasProcessing = docs.some(
+                (d) => d.status === "PENDING" || d.status === "PROCESSING"
+            );
+            return hasProcessing ? 3000 : false;
+        },
     });
 
     const { data: chatsData, isLoading: chatsLoading } = useQuery({

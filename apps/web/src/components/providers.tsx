@@ -14,7 +14,7 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
             new QueryClient({
                 defaultOptions: {
                     queries: {
-                        staleTime: 60 * 1000,
+                        staleTime: 0,
                         refetchOnWindowFocus: false,
                         retry: (failureCount, error: any) => {
                             // check it's actually an ApiError with a status
