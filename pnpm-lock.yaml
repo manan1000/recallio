@@ -261,6 +261,9 @@ importers:
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
+      prisma:
+        specifier: ^7.7.0
+        version: 7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.2)
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
@@ -268,9 +271,6 @@ importers:
       '@types/node':
         specifier: ^25.1.0
         version: 25.2.3
-      prisma:
-        specifier: ^7.7.0
-        version: 7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.2)
 
   packages/eslint-config:
     dependencies:
